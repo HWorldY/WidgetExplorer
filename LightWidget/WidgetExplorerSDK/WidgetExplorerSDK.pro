@@ -26,28 +26,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # In order to do so, uncomment the following line.
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
-
+include(WidgetExplorerSDKInternal.pri)
 HEADERS += \
-    WConfig/wconfig.h \
     WDef/colordef.h \
     WDef/wedef.h \
     WE/we.h \
-    WE/webase.h \
-    WFile/wpath.h \
-    WPlugin/wplugininterface.h \
-    WPlugin/wpluginmanager.h \
-    WPlugin/wpluginmanager_global.h \
-    WPlugin/wpluginmanagerprivate.h \
-    WPlugin/wpluginmetadata.h \
     wconfig.h \
     wdef.h \
     wfile.h \
     wplugin.h \
 
 SOURCES += \
-    WConfig/wconfig.cpp \
     WE/we.cpp \
-    WE/webase.cpp \
-    WFile/wpath.cpp \
-    WPlugin/wpluginmanager.cpp \
-    WPlugin/wpluginmanagerprivate.cpp \

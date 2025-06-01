@@ -8,10 +8,10 @@
 #include <QVariant>
 #include <QMap>
 #include <QString>
-/**
- * 插件间消息封装体
- **/
-struct WPluginMetaData
+///
+/// \brief The WMetaData class
+///
+struct WMetaData
 {
     QString from;
     QString dest;
@@ -19,6 +19,6 @@ struct WPluginMetaData
     QMap<QString,QVariant> map;
     QObject *object = nullptr;
 };
-Q_DECLARE_METATYPE(WPluginMetaData);
+Q_DECLARE_METATYPE(WMetaData);
 
 #endif

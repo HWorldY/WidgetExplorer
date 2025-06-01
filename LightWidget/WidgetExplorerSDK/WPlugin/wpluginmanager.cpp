@@ -1,155 +1,186 @@
 ﻿//Copyright 2025 HWorldY
 //the Apache License, Version 2.0
 //Author: HWorldY
-#include "wpluginmanager.h"
-#include "wpluginmanagerprivate.h"
-#include "wplugininterface.h"
+#include "../WPlugin/wpluginmanager.h"
+#include "../WPlugin/wplugininterface.h"
+#include"../WPlugin/wplugin.h"
+
 #include <QDir>
 #include <QCoreApplication>
 #include <QJsonArray>
-#include <QDebug>
-
-WPluginManager* WPluginManager::m_instance=nullptr;
-
+#include <QHash>
+#include <QVariant>
+#include <QPluginLoader>
+///
+/// \brief The WPluginManagerPrivate class
+///
+class WPluginManagerPrivate
+{
+public:
+    QMap<QUuid,WPlugin*>plugins;
+};
+///
+/// \brief WPluginManager::WPluginManager
+///
 WPluginManager::WPluginManager()
 {
-    d = new WPluginManagerPrivate();
+    d=new WPluginManagerPrivate;
 }
-
+///
+/// \brief WPluginManager::~WPluginManager
+///
 WPluginManager::~WPluginManager()
 {
-    if(d)
-        delete d;
+    delete d;
+    d=nullptr;
 }
-WPluginManager* WPluginManager::instance(){{
-        if(m_instance==nullptr)
-            m_instance=new WPluginManager();
-        return m_instance;
-    }}
-void WPluginManager::loadAllPlugins()
-{
-    QDir pluginsdir = QDir(qApp->applicationDirPath());
-    pluginsdir.cd("widget");
-
-    QFileInfoList pluginsInfo = pluginsdir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
-    //初始化插件中的元数据
-    for(QFileInfo fileinfo : pluginsInfo)
-        scanMetaData(fileinfo.absoluteFilePath());
-
-    //加载插件
-    for(QFileInfo fileinfo : pluginsInfo)
-        loadPlugin(fileinfo.absoluteFilePath());
+///
+/// \brief WPluginManager::createPlugin
+/// \param configPath
+/// \param config
+/// \return
+///
+WPlugin* WPluginManager::createPlugin(QString configPath,QString config){
+    auto plugin=new WPlugin(this);
+    plugin->readConfig(configPath,config);
+    return plugin;
 }
-
-void WPluginManager::scanMetaData(const QString &filepath)
-{
-    //判断是否为库（后缀有效性）
-    if(!QLibrary::isLibrary(filepath))
-        return ;
-    //获取元数据
-    QPluginLoader *loader = new QPluginLoader(filepath);
-    QJsonObject json = loader->metaData().value("MetaData").toObject();
-
-    QVariant var = json.value("name").toVariant();
-    d->m_names.insert(filepath, json.value("name").toVariant());
-    d->m_authors.insert(filepath, json.value("author").toVariant());
-    d->m_versions.insert(filepath, json.value("version").toVariant());
-    d->m_dependencies.insert(filepath, json.value("dependencies").toArray().toVariantList());
-
-    delete loader;
-    loader = nullptr;
-}
-
-void WPluginManager::loadPlugin(const QString &filepath)
-{
-    if(!QLibrary::isLibrary(filepath))
-        return;
-
-    //检测依赖
-    if(!d->check(filepath))
-        return;
-
-    //加载插件
-    QPluginLoader *loader = new QPluginLoader(filepath);
-    if(loader->load())
-    {
-        // 如果继承自 Plugin，则认为是自己的插件（防止外部插件注入）。
-        WPluginInterface *plugin = qobject_cast<WPluginInterface *>(loader->instance());
-        if(plugin)
-        {
-            d->m_loaders.insert(filepath, loader);
-            plugin->connectTosendMsgToManager(this, SLOT(recMsgFromManager(WPluginMetaData&)), true);
+///
+/// \brief WPluginManager::loadPlugin
+/// \param plugin
+/// \return
+///
+bool WPluginManager::loadPlugin(WPlugin* plugin){
+    if(plugin->available()){
+        QString name=qvariant_cast<QString>(plugin->getMetaData("name"));
+        while(getPluginById(getPluginByName(name))){
+            name+="#";
         }
-        else
-        {
-            delete loader;
-            loader = nullptr;
-        }
+        plugin->setMetaData("name",name);
+        d->plugins.insert(QUuid::createUuid(),plugin);
+        return true;
     }
+    return false;
 }
-
+///
+/// \brief WPluginManager::unloadPlugin
+/// \param plugin
+/// \return
+///
+bool WPluginManager::unloadPlugin(WPlugin* plugin){
+    auto it=d->plugins.begin();
+    for(;it!=d->plugins.end();it++){
+        if(*it==plugin)break;
+    }
+    if(it==d->plugins.end())return false;
+    return unloadPlugin(it);
+}
+///
+/// \brief WPluginManager::unloadAllPlugins
+///
 void WPluginManager::unloadAllPlugins()
 {
-    for(QString filepath : d->m_loaders.keys())
-        unloadPlugin(filepath);
-}
-
-void WPluginManager::unloadPlugin(const QString &filepath)
-{
-    QPluginLoader *loader = d->m_loaders.value(filepath);
-    //卸载插件，并从内部数据结构中移除
-    if(loader->unload())
-    {
-        d->m_loaders.remove(filepath);
-        delete loader;
-        loader = nullptr;
+    for(auto it=d->plugins.begin();it!=d->plugins.end();it++){
+        unloadPlugin(it);
     }
 }
-
-QList<QPluginLoader *> WPluginManager::allPlugins()
-{
-    return d->m_loaders.values();
+///
+/// \brief WPluginManager::unloadPlugin
+/// \param it
+/// \return
+///
+bool WPluginManager::unloadPlugin(QMap<QUuid,WPlugin*>::Iterator it){
+    if(!(*it)->unload())return false;
+    d->plugins.erase(it);
+    return true;
 }
-
-QPluginLoader* WPluginManager::getPlugin(const QString &name)
-{
-    return d->m_loaders.value(d->m_names.key(name));
+///
+/// \brief WPluginManager::getPluginByAttr
+/// \param key
+/// \param value
+/// \return
+///
+QVector<QUuid> WPluginManager::getPluginByAttr(QString key,QVariant value){
+    QVector<QUuid> res;
+    for(auto it=d->plugins.begin();it!=d->plugins.end();it++){
+        if(it.value()->getMetaData(key)==value)res.push_back(it.key());
+    }
+    return res;
 }
-
-QVariant WPluginManager::getPluginName(QPluginLoader *loader)
+///
+/// \brief WPluginManager::getPluginByName
+/// \param name
+/// \return
+///
+QUuid WPluginManager::getPluginByName(QString name){
+    auto list=getPluginByAttr("name",name);
+    if(!list.isEmpty())return list[0];
+    return QUuid();
+}
+//
+/// \brief WPluginManager::getPlugin
+/// \param id
+/// \return
+///
+WPlugin* WPluginManager::getPluginById(QUuid id){
+    if(d->plugins.contains(id))return d->plugins[id];
+    return nullptr;
+}
+///
+/// \brief WPluginManager::setPluginData
+/// \param id
+/// \param key
+/// \param value
+/// \return
+///
+QVariant WPluginManager::setPluginData(QUuid id,QString key,QVariant value){
+    if(!d->plugins.contains(id))return value;
+    auto plugin=d->plugins[id];
+    if(key=="name"){
+        QString name=qvariant_cast<QString>(value);
+        while(getPluginById(getPluginByName(name))){
+            if(getPluginByAttr("name",name).length()==1&&plugin->getMetaData("name")==name)return name;
+            name+="#";
+        }
+        value=name;
+    }
+    return value;
+}
+///
+/// \brief WPluginManager::getUuid
+/// \param plugin
+/// \return
+///
+QUuid WPluginManager::getUuid(WPlugin* plugin){
+    for(auto it=d->plugins.begin();it!=d->plugins.end();it++){
+        if(it.value()==plugin)return it.key();
+    }
+    return QUuid();
+}
+///
+/// \brief WPluginManager::allPluginsId
+/// \return
+///
+QVector<QUuid> WPluginManager::allPluginsId(){
+    return d->plugins.keys();
+}
+///
+/// \brief WPluginManager::allPluginsInst
+/// \return
+///
+QVector<WPlugin*> WPluginManager::allPluginsInst(){
+    return d->plugins.values();
+}
+///
+/// \brief WPluginManager::sendMsg
+/// \param msg
+///
+void WPluginManager::sendMsg(WMetaData &msg)
 {
+    auto loader =getPluginById(getPluginByName(msg.dest));
     if(loader)
-        return d->m_names.value(d->m_loaders.key(loader));
-    else
-        return "";
-}
-QVariant WPluginManager::getMetaData(QPluginLoader *loader, QString item){
-    if(loader){
-        if(item=="name")return d->m_names.value(d->m_loaders.key(loader));
-        else if(item=="author")return d->m_authors.value(d->m_loaders.key(loader));
-        else if(item=="version")return d->m_versions.value(d->m_loaders.key(loader));
-        else if(item=="path")return loader->fileName();
+    {
+        auto plugin = loader->inst();
+        if(plugin)plugin->recMsg(msg);
     }
-    return "";
-}
-QList<QString> WPluginManager::allPluginsName(){
-    auto l=allPlugins();
-    QStringList list;
-    for(auto it=l.begin();it!=l.end();it++){
-        list+=getPluginName(*it).toString();
-    }
-    return list;
-}
-void WPluginManager:: recMsgFromManager(WPluginMetaData &msg)
-{
-     qDebug()  <<"WPluginManager::recMsgFromManager..."<< msg.dest;
-     auto loader = getPlugin(msg.dest);
-     if(loader)
-     {
-         auto plugin = qobject_cast<WPluginInterface*>(loader->instance());;
-         if(plugin)
-         {
-             plugin->recMsgFromManager(msg);
-         }
-     }
 }

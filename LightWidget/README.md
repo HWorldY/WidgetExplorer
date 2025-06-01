@@ -8,7 +8,6 @@ Qt6 (MSVC2022 64bit)
     │ README.md                      //README
     ├─ExamplePlugin                  //示例插件
     ├─LightWidget                    //主程序
-    ├─Shared                         //共享文件
     └─WidgetExplorerSDK              //WidgetExplorer核心库
         ├─WConfig                    //配置
         ├─WDef                       //定义
@@ -16,7 +15,8 @@ Qt6 (MSVC2022 64bit)
         ├─WFile
         └─WPlugin                    //插件加载类
 ## 版本内容更新
-###### v1.0
-1.实现基本功能
+###### v1.1
+1.添加对外部程序的的支持
+2.添加插件配置文件
 ## 许可证
 [APACHE LICENSE, VERSION 2.0](https://www.apache.org/licenses/LICENSE-2.0)

@@ -3,30 +3,35 @@
 //Author: HWorldY
 #ifndef WPATH_H
 #define WPATH_H
+#include"../WDef/wedef.h"
+#include"../WE/wbase.h"
+
+#include <Windows.h>
 #include <QString>
-#include <windows.h>
 #include <QtGlobal>
 #include <QObject>
-#include "../wdef.h"
 
-#if defined(WIDGETEXPLORERSDK_LIBRARY)
-#  define FILEPATHSHARED_EXPORT Q_DECL_EXPORT
-#else
-#  define FILEPATHSHARED_EXPORT Q_DECL_IMPORT
-#endif
-class FILEPATHSHARED_EXPORT WPath
+class WPathPrivate;
+
+class WE_NAMESPACE::WPath:public WBase
 {
 public:
     WPath(WEBase* we=nullptr);
-    static QString getModulePath();
-    static QString getModuleFolder();
-    static void ShellExe(QString lpFile,QString lpOperation="open",QString lpParameters="",QString lpDirectory="default");
-    QString getModulePath(QString moduleName);
-    QString getModuleFolder(QString moduleName);
-    static QString splitPath(QString path);
+    virtual~WPath();
+    void setWEBase(WEBase* base);
+    QString getModulePath();
+    QString getModuleFolder();
+    QString getModulePath(QUuid moduleId);
+    QString getModuleFolder(QUuid moduleId);
+    QString getModulePath(WPlugin* plugin);
+    QString getModuleFolder(WPlugin* plugin);
+    QString splitPath(QString path);
+    QString transPath(QString cur,QString des);
+    void ShellExe(QString lpFile,QString lpOperation="open",QString lpParameters="",QString lpDirectory="default");
 private:
-    WEBase* webase=nullptr;
-    QString moduleName="";
+    WPathPrivate* d=nullptr;
 };
 
+Q_DECLARE_METATYPE(WE_NAMESPACE::WPath);
+Q_DECLARE_METATYPE(WE_NAMESPACE::WPath*);
 #endif // WPATH_H

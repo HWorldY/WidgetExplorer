@@ -3,18 +3,29 @@
 //Author: HWorldY
 #ifndef WEBASE_H
 #define WEBASE_H
+#include"../WDef/wedef.h"
+#include"../WE/webasedata.h"
+#include"../WE/weclass.h"
+
 #include <QObject>
-#include"../wdef.h"
-#include"../WidgetExplorerSDK/WConfig/wconfig.h"
-class WEBase
+#include<QSharedPointer>
+
+class WEBasePrivate;
+
+class WE_NAMESPACE::WEBase
 {
 public:
     WEBase();
-	virtual WConfig* configManager()=0;
-    virtual WPath pathManager()=0;
-    virtual WPluginManager* pluginManager()=0;
+    virtual ~WEBase();
+    virtual QSharedPointer<WEClass> getWEClass();
+    virtual void setWEClass(QSharedPointer<WEClass> weclass);
+    virtual QSharedPointer<WEBaseData> getWEBaseData();
+    virtual void setWEBaseData(QSharedPointer<WEBaseData> webasedata);
+private:
+    WEBasePrivate* d=0;
 };
-typedef WEBase* WEBasePtr;
-Q_DECLARE_METATYPE(WEBase);
-Q_DECLARE_METATYPE(WEBasePtr);
+
+Q_DECLARE_METATYPE(WE_NAMESPACE::WEBase);
+Q_DECLARE_METATYPE(WE_NAMESPACE::WEBase*);
+
 #endif // WEBASE_H

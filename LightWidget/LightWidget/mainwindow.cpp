@@ -11,12 +11,16 @@
 #include"../WidgetExplorerSDK/WFile/wpath.h"
 #include"../WidgetExplorerSDK/wplugin.h"
 #include "lightwidget.h"
+#include "../WidgetExplorerSDK/WE/we.h"
+#include "../WidgetExplorerSDK/WE/webase.h"
+#include"../WidgetExplorerSDK/WPlugin/wwidgetmanager.h"
 
 MainWindow::MainWindow(QStringList param,LightWidget* ptr, QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     this->ptr=ptr;
+    this->sys=new LightSystem;
 
     ui->setupUi(this);
     this->resize(1200,800);
@@ -27,20 +31,29 @@ MainWindow::MainWindow(QStringList param,LightWidget* ptr, QWidget *parent)
     this->setAutoFillBackground(true);
     this->setPalette(pal);
 
-    if(param.length()>=1)if(param[0]=="autorun")ptr->configManager()->setConfig("autorun",true);
-    if(!qvariant_cast<bool>(ptr->configManager()->getConfig("autorun")))show();
+    if(param.length()>=1)if(param[0]=="autorun")ptr->getWEClass()->configManager()->set("autorun",true);
+    if(!qvariant_cast<bool>(ptr->getWEClass()->configManager()->get("autorun")))show();
 
-    WPluginManager::instance()->loadAllPlugins();
-    auto plugins=WPluginManager::instance()->allPlugins();
+    //Load plugins
+    this->sys->loadAllPlugin();
+    auto plugins=WE::inst()->getWEClass()->pluginManager()->allPluginsInst();
     foreach(auto plugin,plugins)
     {
-        WPluginInterface *app = qobject_cast<WPluginInterface*>(plugin->instance());
+        WPluginInterface *app = plugin->inst();
         if (app)
         {
+            if(qvariant_cast<QString>(plugin->getMetaData("type"))=="exe"){
+                if(qvariant_cast<QString>(plugin->getMetaData("init"))=="default"){
+                    continue;
+                }
+            };
             QMap<QString,QVariant> data;
             QVariant var;
+            QVariant var2;
             var.setValue((WEBase*)ptr);
+            var2.setValue(plugin);
             data.insert("WE",var);
+            data.insert("Plugin",var2);
             app->init(data);
         }
     }
@@ -71,10 +84,11 @@ MainWindow::MainWindow(QStringList param,LightWidget* ptr, QWidget *parent)
     connect(actAbout,&QAction::triggered,this,&MainWindow::about);
     connect(actReset,&QAction::triggered,this,&MainWindow::reset);
     connect(actSetting,&QAction::triggered,this,[](){
-        WPath::ShellExe(WPath().getModuleFolder()+"config/config.json");
+        WPath().ShellExe(WPath().getModuleFolder()+"config/config.json");
     });
-    WPluginManager::instance();
 
+    //Init widgets
+    WE::inst()->getWEClass()->widgetManager()->initWidget();
 }
 void MainWindow::createCol(int col,QString title,QFont font,QColor color){
     QTableWidgetItem*item=new QTableWidgetItem(title);
@@ -103,7 +117,7 @@ void MainWindow::initTable(){
     createCol(2,"作者",font,color);
     createCol(3,"路径",font,color);
 
-    auto list=WPluginManager::instance()->allPlugins();
+    auto list=WE::inst()->getWEClass()->pluginManager()->allPluginsInst();
     ui->tableWidget->setRowCount(list.length());
     auto it=list.begin();
     for(int i=0;i<=list.length()-1;i++){
@@ -111,15 +125,16 @@ void MainWindow::initTable(){
         it++;
     }
 }
-void MainWindow::createRow(int row,  QPluginLoader* info){
-    QTableWidgetItem*item;
+void MainWindow::createRow(int row,  WPlugin* info){
+    if(row>=ui->tableWidget->rowCount())return;
+    QTableWidgetItem*item=nullptr;
     QString str;
     QStringList list={"name","version","author","path"};
     for(int i=0;i<=list.length()-1;i++){
-        str=qvariant_cast<QString>(WPluginManager::instance()->getMetaData(info,list[i]));
+        str=qvariant_cast<QString>(info->getMetaData(list[i]));
         item=new QTableWidgetItem(str);
         item->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
-        if(row!=ui->tableWidget->columnCount()-1)ui->tableWidget->setItem(row,i,item);
+        ui->tableWidget->setItem(row,i,item);
     }
 }
 void MainWindow::tray(QSystemTrayIcon::ActivationReason reason){
@@ -151,7 +166,7 @@ void MainWindow::showPanel()
     this->raise();
 }
 QStringList MainWindow::ReadLinkFile(){
-    QFile file(WPath(nullptr).getModuleFolder()+"/widget/link.txt");
+    QFile file(WPath().getModuleFolder()+"widget/link.txt");
     QStringList list;
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
@@ -184,7 +199,7 @@ void MainWindow::about(){
 void MainWindow::reset(){
     lock->unlock();
     Sleep(10);
-    WPath::ShellExe(WPath::getModulePath());
+    WPath().ShellExe(WPath().getModulePath());
     ::TerminateProcess(::GetCurrentProcess(), 0);
 }
 

@@ -11,9 +11,9 @@ LIBS += -luser32
 LIBS+=-lshell32
 win32 {
     CONFIG(debug, debug|release) {
-        DESTDIR  = ../LightWidget/debug/widget
+        DESTDIR  = ../LightWidget/debug/widget/Example
     } else {
-        DESTDIR  = ../LightWidget/release/widget
+        DESTDIR  = ../LightWidget/release/widget/Example
     }
 }#生成插件的目录
 win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../LightWidget/release/ -lwidgetexplorersdk
@@ -24,13 +24,15 @@ else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../LightWidget/debu
 include(../WidgetExplorerSDK/WidgetExplorerSDK.pri)
 SOURCES += \
     exampledialog.cpp \
-    exampleplugin.cpp
+    exampleplugin.cpp \
+    examplewidget.cpp
 
 HEADERS += \
     exampledialog.h \
-    exampleplugin.h
+    exampleplugin.h \
+    examplewidget.h
 
-DISTFILES += ExamplePlugin.json
+DISTFILES +=
 
 # Default rules for deployment.
 unix {

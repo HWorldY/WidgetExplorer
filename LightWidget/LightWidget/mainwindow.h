@@ -11,9 +11,11 @@
 #include <QSystemTrayIcon>
 #include <QLockFile>
 #include <QPluginLoader>
+#include"../WidgetExplorerSDK/WPlugin/wplugin.h"
 
 #include "aboutwindow.h"
 #include"../WidgetExplorerSDK/wdef.h"
+#include "lightsystem.h"
 
 namespace Ui { class MainWindow; }
 
@@ -27,10 +29,10 @@ public:
     void tray(QSystemTrayIcon::ActivationReason reason);
     void initTable();
     void createCol(int col,QString title,QFont font,QColor color);
-    void createRow(int row,  QPluginLoader* info);
+    void createRow(int row,  WPlugin *info);
     QStringList ReadLinkFile();
     LightWidget* ptr=nullptr;
-    QLockFile* lock;
+    QLockFile* lock=nullptr;
 public slots:
     void showPanel();
 private slots:
@@ -41,6 +43,7 @@ private slots:
     void about();
     void reset();
 private:
+    LightSystem* sys=nullptr;
     Ui::MainWindow *ui;
     AboutWindow* aboutWnd=nullptr;
 };

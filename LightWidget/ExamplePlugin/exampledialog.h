@@ -3,7 +3,6 @@
 //Author: HWorldY
 #ifndef EXAMPLEDIALOG_H
 #define EXAMPLEDIALOG_H
-
 #include <QDialog>
 namespace Ui {
 class ExampleDialog;

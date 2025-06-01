@@ -3,51 +3,40 @@
 //Author: HWorldY
 #ifndef PLUGINMANAGER_H
 #define PLUGINMANAGER_H
-#include "wpluginmanager_global.h"
-#include "wpluginmetadata.h"
 #include <QObject>
 #include <QPluginLoader>
 #include <QVariant>
+#include"../WDef/wedef.h"
+#include "../WPlugin/wpluginmetadata.h"
 
 class WPluginManagerPrivate;
-class WPLUGINMANAGERSHARED_EXPORT WPluginManager : public QObject
+class WE_NAMESPACE::WPluginManager : public QObject
 {
     Q_OBJECT
 public:
-
     WPluginManager();
-    ~WPluginManager();
+    virtual ~WPluginManager();
 
-    static WPluginManager *instance();
-
-    //加载所有插件
-    void loadAllPlugins();
-
-    //扫描JSON文件中的插件元数据
-    void scanMetaData(const QString &filepath);
-    //加载其中某个插件
-    void loadPlugin(const QString &filepath);
-    //卸载所有插件
+    bool loadPlugin(WPlugin *plugin);
+    bool unloadPlugin(WPlugin* plugin);
     void unloadAllPlugins();
-    //卸载某个插件
-    void unloadPlugin(const QString &filepath);
-    //获取所有插件
-    QList<QPluginLoader *> allPlugins();
-    //获取某个插件
-    QPluginLoader* getPlugin(const QString &name);
-    //获取所有插件名称
-    QList<QString> allPluginsName();
-    //获取某个插件名称
-    QVariant getPluginName(QPluginLoader *loader);
 
-    QVariant getMetaData(QPluginLoader *loader, QString item);
+    QVector<QUuid> getPluginByAttr(QString key,QVariant value);
+    QUuid getPluginByName(QString name);
+    WPlugin* getPluginById(QUuid id);
+    QVector<QUuid> allPluginsId();
+    QVector<WPlugin*> allPluginsInst();
+
+    QVariant setPluginData(QUuid id,QString key,QVariant value);
+    QUuid getUuid(WPlugin* plugin);
+
 private:
-    static WPluginManager *m_instance;
-    WPluginManagerPrivate *d;
-
-private slots:
-    void recMsgFromManager(WPluginMetaData&);
-
+    WPlugin* createPlugin(QString configPath,QString config);
+    bool unloadPlugin(QMap<QUuid,WPlugin*>::Iterator it);
+    WPluginManagerPrivate* d=nullptr;
+public slots:
+    void sendMsg(WMetaData&);
 };
-
+Q_DECLARE_METATYPE(WE_NAMESPACE::WPluginManager)
+Q_DECLARE_METATYPE(WE_NAMESPACE::WPluginManager*)
 #endif

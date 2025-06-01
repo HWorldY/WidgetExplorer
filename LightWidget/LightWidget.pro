@@ -1,6 +1,8 @@
 TEMPLATE = subdirs
-
+CONFIG+=ordered
 SUBDIRS += \
+    WidgetExplorerSDK\
     LightWidget \
     ExamplePlugin\
-    WidgetExplorerSDK\
+    QuantifyPlugin\
+    LockPlugin
