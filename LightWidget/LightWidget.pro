@@ -3,6 +3,4 @@ CONFIG+=ordered
 SUBDIRS += \
     WidgetExplorerSDK\
     LightWidget \
-    ExamplePlugin\
-    QuantifyPlugin\
-    LockPlugin
+    ExamplePlugin
